@@ -1,0 +1,45 @@
+# === Python cache ===
+__pycache__/
+*.py[cod]
+*.pyo
+
+# === Virtual environments ===
+venv/
+.env/
+.venv/
+
+# === Jupyter notebooks ===
+.ipynb_checkpoints/
+
+# === Distribution / packaging ===
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# === Logs and temporary files ===
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# === Editors / IDEs ===
+.vscode/
+.idea/
+
+# === Documentation ===
+docs/_build/
+site/
+mkdocs.yml.lock
+
+# === PDF/image artifacts ===
+glazzbocks_report_images/
+*.pdf
+*.png
+*.svg
+
+# === Notebook outputs (optional) ===
+notebooks/output/
