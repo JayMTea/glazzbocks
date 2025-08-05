@@ -343,20 +343,20 @@ class ModelDiagnostics:
     @staticmethod
     def _expected_calibration_error(
         y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10
-    ) -> float:
-        bins = np.linspace(0.0, 1.0, n_bins + 1)
-        idx = np.digitize(y_prob, bins) - 1
-        ece = 0.0
-        n = len(y_true)
-        for b in range(n_bins):
-            mask = idx == b
-            if not np.any(mask):
-                continue
-            p_hat = y_prob[mask].mean()
-            p_obs = y_true[mask].mean()
-            w = mask.sum() / n
-            ece += w * abs(p_hat - p_obs)
-        return float(ece)
+        ) -> float:
+            bins = np.linspace(0.0, 1.0, n_bins + 1)
+            idx = np.digitize(y_prob, bins) - 1
+            ece = 0.0
+            n = len(y_true)
+            for b in range(n_bins):
+                mask = idx == b
+                if not np.any(mask):
+                    continue
+                p_hat = y_prob[mask].mean()
+                p_obs = y_true[mask].mean()
+                w = mask.sum() / n
+                ece += w * abs(p_hat - p_obs)
+            return float(ece)
 
     def plot_class_separation(self, X, y, method="tsne", perplexity=30):
         """
@@ -403,33 +403,33 @@ class ModelDiagnostics:
 
     def plot_calibration(
         self, X_test, y_test, n_bins=10, show_points=True, ax=None
-    ):
-        self._check_fitted(X_test, y_test)
-        tbl = self.calibration_reliability_table(X_test, y_test, n_bins=n_bins)
-        if ax is None:
-            _, ax = plt.subplots(figsize=(7.5, 6))
-        ax.plot([0, 1], [0, 1], "k--", linewidth=1, label="Perfect")
-        tbl_sorted = tbl.sort_values("pred_mean")
-        ax.plot(
-            tbl_sorted["pred_mean"],
-            tbl_sorted["obs_rate"],
-            linewidth=2,
-            label="Observed",
-        )
-        if show_points:
-            ax.scatter(
+        ):
+            self._check_fitted(X_test, y_test)
+            tbl = self.calibration_reliability_table(X_test, y_test, n_bins=n_bins)
+            if ax is None:
+                _, ax = plt.subplots(figsize=(7.5, 6))
+            ax.plot([0, 1], [0, 1], "k--", linewidth=1, label="Perfect")
+            tbl_sorted = tbl.sort_values("pred_mean")
+            ax.plot(
                 tbl_sorted["pred_mean"],
                 tbl_sorted["obs_rate"],
-                s=np.clip(tbl_sorted["count"], 20, 120),
-                alpha=0.7,
+                linewidth=2,
+                label="Observed",
             )
-        ax.set_title("Reliability Curve (Calibration)")
-        ax.set_xlabel("Predicted probability (bin mean)")
-        ax.set_ylabel("Observed event rate")
-        ax.grid(True, linestyle=":", alpha=0.6)
-        ax.legend()
-        plt.tight_layout()
-        return ax
+            if show_points:
+                ax.scatter(
+                    tbl_sorted["pred_mean"],
+                    tbl_sorted["obs_rate"],
+                    s=np.clip(tbl_sorted["count"], 20, 120),
+                    alpha=0.7,
+                )
+            ax.set_title("Reliability Curve (Calibration)")
+            ax.set_xlabel("Predicted probability (bin mean)")
+            ax.set_ylabel("Observed event rate")
+            ax.grid(True, linestyle=":", alpha=0.6)
+            ax.legend()
+            plt.tight_layout()
+            return ax
 
     def auto_plot(self, X_test, y_test):
         """

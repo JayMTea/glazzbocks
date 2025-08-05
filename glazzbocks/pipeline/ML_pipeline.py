@@ -7,7 +7,7 @@ import time
 
 import numpy as np
 import pandas as pd
-from sklearn.base import clone, is_classifier
+from sklearn.base import clone, is_classifier, is_regressor
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import (
@@ -15,6 +15,11 @@ from sklearn.metrics import (
     mean_absolute_error,
     mean_squared_error,
     r2_score,
+    accuracy_score, 
+    precision_score, 
+    recall_score, 
+    f1_score,
+    
 )
 from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.pipeline import Pipeline
@@ -117,18 +122,27 @@ class MLPipeline:
 
     @staticmethod
     def evaluate_models(model_dict, X_train, y_train, n_splits=5):
-        scoring = ["accuracy", "precision_macro", "recall_macro", "f1_macro"]
         results = {}
         pipelines = {}
 
         for name, model in model_dict.items():
             print(f"\n🔁 Cross-validating model: {name}")
 
+            # Detect task type
+            if is_classifier(model):
+                scoring = ["accuracy", "precision_macro", "recall_macro", "f1_macro"]
+            elif is_regressor(model):
+                scoring = {
+                    "rmse": "neg_root_mean_squared_error",
+                    "mae": "neg_mean_absolute_error",
+                    "r2": "r2"
+                }
+            else:
+                raise ValueError(f"Unknown model type for: {name}")
+
             temp_pipe = MLPipeline(model)
             transformers = temp_pipe._build_transformers(X_train)
-            preprocessor = ColumnTransformer(
-                transformers, remainder="passthrough"
-            )
+            preprocessor = ColumnTransformer(transformers, remainder="passthrough")
 
             pipeline_with_preproc = Pipeline(
                 [("preprocessing", preprocessor), ("model", clone(model))]
@@ -143,10 +157,12 @@ class MLPipeline:
                 return_train_score=False,
             )
 
+            # Print raw CV scores
             for metric in scoring:
                 scores = cv_results[f"test_{metric}"]
                 print(f"  {metric}: {scores}")
 
+            # Store summary
             summary = {
                 metric: (scores.mean(), scores.std())
                 for metric, scores in (
@@ -155,13 +171,13 @@ class MLPipeline:
             }
             results[name] = summary
 
+            # Fit final pipeline for this model
             temp_pipe.build_pipeline(X_train)
             temp_pipe.fit(X_train, y_train)
 
+            # Inference time
             try:
-                sample = X_train.sample(
-                    min(100, len(X_train)), random_state=42
-                )
+                sample = X_train.sample(min(100, len(X_train)), random_state=42)
                 t0 = time.time()
                 _ = temp_pipe.pipeline.predict(sample)
                 latency_ms = (time.time() - t0) / len(sample) * 1000
@@ -171,6 +187,7 @@ class MLPipeline:
             summary["inference_time_ms"] = latency_ms
             pipelines[name] = temp_pipe
 
+        # Convert results to DataFrame
         rows = []
         for model_name, metrics in results.items():
             row = {"model": model_name}
